@@ -21,7 +21,7 @@ function onOpen() {
 
 // UPDATE FUNGSI doGet untuk Routing Halaman Baru
 function doGet(e) {
-  let template = 'Index';
+  let template = 'index';
   if (e.parameter.page === 'dashboard') template = 'dashboard';
   if (e.parameter.page === 'laporan') template = 'report'; // <--- TAMBAHAN BARU
   
@@ -1204,4 +1204,5 @@ function tesFolderLangsung() {
   } catch (e) {
     console.log("GAGAL: " + e.message);
   }
+
 }
