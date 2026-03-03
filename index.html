@@ -1,92 +1,17 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SI-AKSI SMKPPN BIMA</title>
-    <style>
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; background-color: #f4f4f4; }
-        
-        /* Overlay untuk pesan error/loading */
-        #status-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 10000;
-            text-align: center; padding: 20px;
-        }
-
-        .loader {
-            border: 5px solid #f3f3f3; border-top: 5px solid #3498db;
-            border-radius: 50%; width: 50px; height: 50px;
-            animation: spin 1s linear infinite; margin-bottom: 20px;
-        }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        #app-frame {
-            display: none; /* Disembunyikan sampai GPS aktif */
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            border: none; z-index: 9999;
-        }
-
-        .btn-retry {
-            margin-top: 15px; padding: 10px 20px;
-            background: #e74c3c; color: white; border: none;
-            border-radius: 5px; cursor: pointer;
-        }
-    </style>
+   <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>SI-AKSI_SMKPPN BIMA</title>
 </head>
 <body>
-
-    <div id="status-overlay">
-        <div id="loader-icon" class="loader"></div>
-        <h2 id="status-text">Mengecek Lokasi Presensi...</h2>
-        <p id="sub-text">Mohon izinkan akses lokasi (GPS) untuk melanjutkan.</p>
-        <button id="retry-btn" class="btn-retry" style="display:none;" onclick="location.reload()">Coba Lagi</button>
-    </div>
-
-    <iframe 
-        id="app-frame"
-        allow="geolocation" 
-        src="https://script.google.com/a/macros/guru.smk.belajar.id/s/AKfycby-rE7ajJ2BGRVng1eDhQPIh4wMiZg8Z2-suLCs1smVopGAR0_Gr0KTEUiMSGBZ-9a6/exec">
-    </iframe>
-
-    <script>
-        const statusText = document.getElementById('status-text');
-        const subText = document.getElementById('sub-text');
-        const loader = document.getElementById('loader-icon');
-        const retryBtn = document.getElementById('retry-btn');
-        const iframe = document.getElementById('app-frame');
-        const overlay = document.getElementById('status-overlay');
-
-        function checkLocation() {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        // GPS Aktif - Tampilkan Iframe
-                        statusText.innerText = "Lokasi Ditemukan!";
-                        subText.innerText = "Membuka aplikasi...";
-                        setTimeout(() => {
-                            overlay.style.display = 'none';
-                            iframe.style.display = 'block';
-                        }, 1000);
-                    },
-                    function(error) {
-                        // User Menolak GPS
-                        loader.style.display = 'none';
-                        statusText.innerText = "Akses GPS Ditolak";
-                        subText.innerText = "Aplikasi SI-AKSI mewajibkan GPS aktif untuk melakukan presensi.";
-                        retryBtn.style.display = 'block';
-                    },
-                    { enableHighAccuracy: true, timeout: 5000 }
-                );
-            } else {
-                statusText.innerText = "Browser Tidak Support GPS";
-            }
-        }
-
-        // Jalankan pengecekan saat halaman dimuat
-        window.onload = checkLocation;
-    </script>
+   <iframe 
+      allow ="geolocation" 
+      src   ="https://script.google.com/macros/s/AKfycby-rE7ajJ2BGRVng1eDhQPIh4wMiZg8Z2-suLCs1smVopGAR0_Gr0KTEUiMSGBZ-9a6/exec" 
+      style ="position:fixed; top:0; left:0; bottom:0; right:0; width:100%; height:100%; border:none; margin:0; padding:0; overflow:hidden; z-index:999999;"
+   >Your browser doesn't support iframes
+  </iframe>
 </body>
 </html>
