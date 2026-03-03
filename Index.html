@@ -1,0 +1,2109 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SI-AKSI | SMKPP NEGERI BIMA</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+  
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: {
+            primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #f3f4f6; /* gray-100 */
+      background-image: radial-gradient(#d1d5db 1px, transparent 1px);
+      background-size: 20px 20px;
+      -webkit-tap-highlight-color: transparent;
+      padding-top: 60px;
+    }
+
+    /* STATUS BAR (Floating Pill) */
+    #network-status {
+      position: fixed; top: 15px; left: 50%; transform: translateX(-50%) translateY(-150%);
+      padding: 6px 16px; border-radius: 9999px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      font-size: 0.875rem; font-weight: 600; z-index: 50;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+    }
+    .status-visible { transform: translateX(-50%) translateY(0) !important; }
+    .st-online { color: #047857; border: 1px solid #a7f3d0; }
+    .st-offline { color: #b91c1c; border: 1px solid #fecaca; }
+    .st-sync { color: #b45309; border: 1px solid #fde68a; }
+
+    /* CSS Galeri Halus */
+    .carousel-container {
+      margin-top: 15px; overflow-x: auto; display: flex; gap: 12px;
+      padding: 10px 5px; scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch; scroll-behavior: smooth;
+      scrollbar-width: none;
+    }
+    .carousel-container::-webkit-scrollbar { display: none; }
+    .carousel-item {
+      scroll-snap-align: center; min-width: 220px; height: 160px;
+      background: #e5e7eb; border-radius: 1rem; overflow: hidden;
+      position: relative; flex-shrink: 0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+    .carousel-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+    .carousel-item:hover .carousel-img { transform: scale(1.05); }
+
+    #watermarkCanvas { display: none; }
+    .animate-spin-slow { animation: spin 3s linear infinite; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4">
+
+  <div id="network-status" class="st-online status-visible">
+    <span id="status-text"><i class="fa-solid fa-wifi"></i> Online</span>
+  </div>
+
+  <header class="w-full max-w-md flex items-center justify-between mb-6 px-1">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
+        <img src="https://lh3.googleusercontent.com/d/1A_Gt9DA8UyYkDItvlDR2cFVekExmyD4B" onerror="this.src='https://lh3.googleusercontent.com/d/1A_Gt9DA8UyYkDItvlDR2cFVekExmyD4B'" alt="Logo" class="w-8 h-8 object-contain">
+      </div>
+      <div>
+        <h1 class="text-xl font-extrabold text-gray-900 leading-none tracking-tight">SI-AKSI</h1>
+        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">SMKPP NEGERI BIMA</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="accessDashboard()" class="w-10 h-10 rounded-lg bg-yellow-50 text-yellow-600 border border-yellow-200 flex items-center justify-center hover:bg-yellow-100 transition active:scale-95 shadow-sm">
+        <i class="fa-solid fa-trophy"></i>
+      </button>
+      <button onclick="manualRefresh()" class="w-10 h-10 rounded-lg bg-white text-green-600 border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition active:scale-95 shadow-sm">
+        <i id="refresh-icon" class="fa-solid fa-rotate"></i>
+      </button>
+      <button onclick="openHistory()" class="w-10 h-10 rounded-lg bg-white text-blue-600 border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition active:scale-95 shadow-sm">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+      </button>
+    </div>
+  </header>
+
+  <main id="menu-view" class="w-full max-w-md flex flex-col gap-5 pb-10">
+    <div class="block w-full p-4 bg-white border border-gray-200 rounded-2xl shadow hover:bg-gray-50 relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div id="loc-icon-bg" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+            <i id="loc-icon" class="fa-solid fa-location-crosshairs text-gray-500 animate-spin-slow"></i>
+          </div>
+          <div>
+            <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Status Lokasi</h4>
+            <div id="live-coord-text" class="text-sm font-bold text-gray-900">Menghubungkan...</div>
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-blue-200" id="accuracy-text">Scanning...</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <button onclick="openForm('start')" id="btn-main-start" class="relative p-5 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 shadow-md hover:shadow-lg active:scale-95 transition-all text-center group">
+        <div class="w-12 h-12 mx-auto rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm mb-2 group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-play text-white text-xl ml-1"></i>
+        </div>
+        <span class="text-xs font-bold text-white uppercase tracking-wider">Mulai Kerja</span>
+      </button>
+
+      <button onclick="openForm('finish')" id="btn-main-finish" class="relative p-5 rounded-2xl bg-gradient-to-br from-orange-400 to-red-500 shadow-md hover:shadow-lg active:scale-95 transition-all text-center group">
+        <div class="w-12 h-12 mx-auto rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm mb-2 group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-stop text-white text-xl"></i>
+        </div>
+        <span class="text-xs font-bold text-white uppercase tracking-wider">Selesai Kerja</span>
+      </button>
+    </div>
+
+    <div class="w-full">
+      <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Aktivitas Terbaru</h3>
+      <div id="gallery-carousel" class="carousel-container bg-white border border-gray-200 rounded-2xl shadow-sm p-2">
+        <div class="flex items-center justify-center w-full h-32 text-gray-400 text-sm">Memuat galeri...</div>
+      </div>
+    </div>
+
+    <div onclick="openForm('izin')" class="block w-full p-4 bg-white border border-gray-200 rounded-2xl shadow-sm cursor-pointer hover:bg-gray-50 active:scale-95 transition">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+            <i class="fa-solid fa-notes-medical"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900">Tidak Masuk?</h3>
+            <p class="text-xs text-gray-500">Formulir Izin / Sakit / Cuti</p>
+          </div>
+        </div>
+        <i class="fa-solid fa-chevron-right text-gray-400"></i>
+      </div>
+    </div>
+  </main>
+
+  <div id="form-start" class="hidden w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-lg p-5 relative">
+    <div class="flex justify-between items-center mb-5 border-b pb-3">
+      <h2 class="text-lg font-bold text-gray-900">Lapor Awal</h2>
+      <button onclick="closeForm()" class="text-gray-400 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+
+    <div class="flex items-center p-3 mb-4 text-sm text-blue-800 rounded-lg bg-blue-50" role="alert">
+      <i class="fa-solid fa-circle-info mr-2"></i>
+      <span class="font-medium text-xs leading-relaxed">Ambil foto awal lokasi. Gunakan AI untuk merapikan kalimat. Pastikan indikator lokasi hijau. Pekerjaan wajib selesai <span class="font-bold">dalam 24 jam</span>.</span>
+    </div>
+
+    <div class="space-y-4">
+      <div>
+        <label for="namaStart" class="block mb-2 text-sm font-medium text-gray-900">Nama Pegawai</label>
+        <select id="namaStart" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5">
+          <option>Memuat Data...</option>
+        </select>
+      </div>
+      
+      <div class="relative">
+        <label for="kegiatan" class="block mb-2 text-sm font-medium text-gray-900">Kegiatan</label>
+        <textarea id="kegiatan" rows="2" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-green-500 focus:border-green-500 pr-16 resize-none" placeholder="Ketik poin kegiatan (cth: potong rumput)" oninput="autoResize(this)"></textarea>
+        <button type="button" onclick="generateAIKegiatan()" class="absolute right-2 bottom-2 text-white bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-purple-300 font-medium rounded-lg text-xs px-3 py-1.5 text-center flex items-center gap-1">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> AI
+        </button>
+      </div>
+
+      <div>
+        <label for="lokasi" class="block mb-2 text-sm font-medium text-gray-900">Lokasi Spesifik</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none"><i class="fa-solid fa-location-dot text-gray-400"></i></div>
+          <input type="text" id="lokasi" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full ps-10 p-2.5" placeholder="Contoh: Taman Depan">
+        </div>
+      </div>
+      
+      <div>
+        <span class="block mb-2 text-sm font-medium text-gray-900">Foto Kondisi Awal</span>
+        <input type="file" id="fileBefore" accept="image/*" capture="environment" class="hidden" onchange="processImage(this, 'imgBefore', 'valBefore')">
+        <label for="fileBefore" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+          <div class="flex flex-col items-center justify-center pt-5 pb-6 text-gray-500">
+            <i class="fa-solid fa-camera text-2xl mb-2"></i>
+            <p class="text-xs font-semibold uppercase">Ambil Foto Before</p>
+          </div>
+        </label>
+        <img id="imgBefore" class="hidden w-full rounded-lg mt-3 border border-gray-200 shadow-sm">
+        <input type="hidden" id="valBefore">
+      </div>
+
+      <button onclick="submitStart()" id="btnStart" type="button" class="w-full text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-3.5 text-center mt-4 uppercase tracking-wide flex justify-center items-center gap-2">
+        <span>KIRIM LAPORAN</span> <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+
+  <div id="form-finish" class="hidden w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-lg p-5 relative">
+    <div class="flex justify-between items-center mb-4 border-b pb-3">
+      <h2 class="text-lg font-bold text-gray-900">Lapor Akhir</h2>
+      <button onclick="closeForm()" class="text-gray-400 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+
+    <div id="live-radius-status" class="flex items-center p-3 mb-4 text-sm text-gray-800 border border-gray-300 rounded-lg bg-gray-50" role="alert">
+      <i class="fa-solid fa-location-dot mr-3 text-lg"></i>
+      <div>
+        <span class="font-bold" id="radius-text">Mencari Lokasi...</span>
+        <p class="text-xs mt-0.5" id="radius-dist">Pilih pekerjaan untuk cek jarak.</p>
+      </div>
+    </div>
+
+    <div class="space-y-4">
+      <div class="flex items-center p-3 text-gray-900 bg-gray-50 border border-gray-200 rounded-lg">
+        <div class="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-500 mr-3"><i class="fa-solid fa-user-check"></i></div>
+        <div>
+          <div class="text-[10px] uppercase font-bold text-gray-500">Pelapor</div>
+          <div id="namaFinishDisplay" class="font-bold text-sm">Memverifikasi...</div>
+          <input type="hidden" id="namaFinish">
+        </div>
+      </div>
+
+      <div>
+        <label for="jobList" class="block mb-2 text-sm font-medium text-gray-900">Pekerjaan Aktif</label>
+        <select id="jobList" class="bg-blue-50 border border-blue-300 text-blue-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 font-medium">
+          <option value="">-- Menunggu Verifikasi --</option>
+        </select>
+      </div>
+
+      <div>
+        <span class="block mb-2 text-sm font-medium text-gray-900">Foto Hasil Kerja</span>
+        <input type="file" id="fileAfter" accept="image/*" capture="environment" class="hidden" onchange="processImage(this, 'imgAfter', 'valAfter')">
+        <label for="fileAfter" class="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-300 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition">
+          <div class="flex flex-col items-center justify-center pt-5 pb-6 text-blue-600">
+            <i class="fa-solid fa-check-double text-2xl mb-2"></i>
+            <p class="text-xs font-semibold uppercase">Ambil Foto After</p>
+          </div>
+        </label>
+        <img id="imgAfter" class="hidden w-full rounded-lg mt-3 border border-gray-200 shadow-sm">
+        <input type="hidden" id="valAfter">
+      </div>
+
+      <button onclick="submitFinish()" id="btnFinish" type="button" class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-3.5 text-center mt-4 uppercase tracking-wide flex justify-center items-center gap-2">
+        <span>SELESAIKAN KERJA</span> <i class="fa-solid fa-circle-check"></i>
+      </button>
+    </div>
+  </div>
+
+  <div id="form-izin" class="hidden w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-lg p-5 relative">
+    <div class="flex justify-between items-center mb-5 border-b pb-3">
+      <div>
+        <h2 class="text-lg font-bold text-gray-900">Form Izin</h2>
+        <p class="text-xs text-gray-500">Sakit / Cuti / Dinas</p>
+      </div>
+      <button onclick="closeForm()" class="text-gray-400 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block mb-2 text-sm font-medium text-gray-900">Nama Pegawai</label>
+        <select id="namaIzin" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5">
+          <option value="">Memuat Data...</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block mb-2 text-sm font-medium text-gray-900">Jenis Ketidakhadiran</label>
+        <select id="tipeIzin" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5">
+           <option value="">-- Pilih Jenis --</option>
+           <option value="SAKIT">Sakit (Lampirkan Surat)</option>
+           <option value="IZIN">Izin Kepentingan</option>
+           <option value="CUTI">Cuti Tahunan</option>
+           <option value="DINAS">Dinas Luar</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block mb-2 text-sm font-medium text-gray-900">Keterangan / Alasan</label>
+        <textarea id="alasanIzin" rows="3" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-purple-500 focus:border-purple-500 resize-none" placeholder="Tulis alasan lengkap..."></textarea>
+      </div>
+
+      <div>
+        <span class="block mb-2 text-sm font-medium text-gray-900">Bukti Surat (Opsional)</span>
+        <input type="file" id="fileBukti" accept="image/*" class="hidden" onchange="previewBukti(this)">
+        <label for="fileBukti" class="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-purple-50 hover:border-purple-300 transition text-gray-500 hover:text-purple-600">
+          <div class="flex flex-col items-center justify-center pt-5 pb-6">
+            <i class="fa-solid fa-paperclip text-lg mb-1"></i>
+            <p class="text-xs font-semibold">Upload Surat</p>
+          </div>
+        </label>
+        <img id="previewBuktiImg" class="hidden w-full h-32 object-cover rounded-lg mt-3 border border-gray-200">
+        <input type="hidden" id="valBukti">
+      </div>
+
+      <button onclick="submitIzin()" id="btnIzin" type="button" class="w-full text-white bg-purple-600 hover:bg-purple-700 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-3.5 text-center mt-2 flex justify-center items-center gap-2 uppercase">
+        <span>AJUKAN IZIN</span> <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+
+  <div id="modal-history" tabindex="-1" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full bg-gray-900/50 backdrop-blur-sm flex">
+    <div class="relative p-4 w-full max-w-md max-h-full mt-auto mb-4">
+      <div class="relative bg-white rounded-2xl shadow flex flex-col h-[75vh]">
+        <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t">
+          <div>
+            <h3 class="text-lg font-bold text-gray-900">Riwayat Hari Ini</h3>
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest" id="hist-date">Loading...</p>
+          </div>
+          <button type="button" onclick="document.getElementById('modal-history').classList.add('hidden')" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="p-4 md:p-5 flex-1 overflow-y-auto flex flex-col gap-3">
+          <select id="namaHistory" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 mb-2" onchange="loadHistoryData()">
+            <option>Pilih Nama Pegawai...</option>
+          </select>
+          <div id="history-content" class="flex-1 flex flex-col gap-3">
+            <div class="flex flex-col items-center justify-center h-40 text-gray-400 gap-2">
+              <i class="fa-solid fa-clipboard-list text-3xl"></i>
+              <p class="text-sm">Pilih nama untuk melihat data</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="watermarkCanvas"></canvas>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+
+  <script>
+    const SCHOOL_LOGO = "https://lh3.googleusercontent.com/d/1A_Gt9DA8UyYkDItvlDR2cFVekExmyD4B"; 
+    let coords = "";
+    let autoSlideInterval;
+    let watchId = null;
+    let currentWatcher = null;
+let timerInterval;
+    // --- FUNGSI TRACKING REAL-TIME (PENGGANTI GetLocation) ---
+function startLiveTracking() {
+      const textEl = document.getElementById('live-coord-text');
+      const accEl = document.getElementById('accuracy-text');
+      const iconBg = document.getElementById('loc-icon-bg');
+      const icon = document.getElementById('loc-icon');
+
+      if (!navigator.geolocation) return;
+
+      navigator.geolocation.watchPosition(
+        (p) => {
+          const lat = p.coords.latitude.toFixed(6);
+          const lng = p.coords.longitude.toFixed(6);
+          const acc = Math.round(p.coords.accuracy);
+          
+          coords = `${lat},${lng}`;
+
+          if (textEl) {
+            textEl.innerText = `${lat}, ${lng}`;
+            textEl.className = "text-sm font-bold text-green-700 tracking-tight";
+          }
+          if (accEl) {
+            accEl.innerText = `± ${acc} Meter`;
+            accEl.className = acc > 50 ? "bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-yellow-200" : "bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-green-200";
+          }
+          if (iconBg) iconBg.className = "w-10 h-10 rounded-full bg-green-100 flex items-center justify-center";
+          if (icon) {
+            icon.className = "fa-solid fa-location-dot text-green-600";
+            icon.classList.remove('animate-spin-slow');
+          }
+        },
+        (e) => {
+          if (textEl) textEl.innerText = "GPS Terblokir / Lemah";
+          if (iconBg) iconBg.className = "w-10 h-10 rounded-full bg-red-100 flex items-center justify-center";
+          if (icon) icon.className = "fa-solid fa-triangle-exclamation text-red-600";
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    }
+    
+// 1. WINDOW ONLOAD - DIOPTIMALKAN (Hanya 1x Call)
+window.onload = () => {
+  startLiveTracking();   
+  updateNetworkStatus(); 
+  
+  // Tampilkan Loading
+  Swal.fire({
+    title: 'Sinkronisasi...',
+    allowOutsideClick: false,
+    showConfirmButton: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  // 1. AMBIL DAFTAR PEGAWAI DULU
+  google.script.run.withSuccessHandler((data) => {
+    fillStaff(data); // Isi semua dropdown nama
+    
+    // 2. SETELAH NAMA SIAP, BARU JALANKAN AUTO LOGIN
+    runAutoLogin();
+    loadGallery();
+  }).getStaffList();
+};
+
+// --- FUNGSI UNTUK ZOOM GAMBAR (AGAR TIDAK ERROR viewImage is not defined) ---
+function viewImage(url) {
+  // Hentikan geser otomatis saat melihat foto
+  if (autoSlideInterval) clearInterval(autoSlideInterval);
+
+  Swal.fire({
+    imageUrl: url,
+    imageAlt: 'Bukti Kegiatan',
+    showConfirmButton: false,
+    background: 'rgba(255,255,255,0.9)',
+    backdrop: 'rgba(0,0,0,0.8)',
+    showCloseButton: true,
+    customClass: {
+      image: 'rounded-2xl'
+    }
+  }).then(() => {
+    // Mulai lagi slide otomatis setelah modal ditutup
+    startAutoSlide();
+  });
+}
+
+// --- FUNGSI LOAD GALLERY ---
+function loadGallery() {
+  const container = document.getElementById('gallery-carousel');
+  if (!container) return;
+
+  google.script.run.withSuccessHandler(files => {
+    if (!files || files.length === 0) {
+      container.innerHTML = '<div class="text-xs text-slate-400 w-full text-center py-4 italic">Belum ada foto kegiatan terbaru.</div>';
+      return;
+    }
+
+    let html = '';
+    files.forEach(f => {
+      html += `
+        <div class="carousel-item" onclick="viewImage('${f.url}')" style="cursor:pointer">
+          <img src="${f.url}" class="carousel-img" loading="lazy">
+          <div class="carousel-caption" style="position:absolute; bottom:0; width:100%; background:linear-gradient(transparent, rgba(0,0,0,0.8)); color:white; font-size:9px; padding:8px 4px;">
+            ${f.date}
+          </div>
+        </div>
+      `;
+    });
+    container.innerHTML = html;
+    
+    // Aktifkan Auto-Slide Halus
+    startAutoSlide();
+  }).getRecentGallery();
+}
+
+function updateButtonBadges(count) {
+  const container = document.getElementById('btn-main-finish');
+  if (!container) return;
+
+  // Hapus badge lama jika sudah ada agar tidak dobel
+  const oldBadge = document.getElementById('pending-badge-main');
+  if (oldBadge) oldBadge.remove();
+
+  // Jika ada tunggakan (> 0), buat elemen badge baru
+  if (count > 0) {
+    const badge = document.createElement('div');
+    badge.id = 'pending-badge-main';
+    // Styling: Lingkaran merah, tulisan putih, animasi mantul (bounce)
+    badge.className = "absolute -top-1 -right-1 w-6 h-6 bg-red-600 border-2 border-white text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg z-20 animate-bounce";
+    badge.innerText = count;
+    
+    container.appendChild(badge);
+  }
+}
+
+function runAutoLogin() {
+  const myDeviceId = getDeviceId();
+  
+  google.script.run.withSuccessHandler((result) => {
+    Swal.close(); 
+    
+    if (result.status === 'found') {
+      // 1. Kunci Identitas
+      const displayNama = document.getElementById('namaFinishDisplay');
+      const inputNama = document.getElementById('namaFinish');
+      if(displayNama) displayNama.innerText = result.name;
+      if(inputNama) inputNama.value = result.name;
+
+      localStorage.setItem('siaksi_user_name', result.name);
+
+      // 2. SINKRONISASI PEKERJAAN (PENTING!)
+      // Kirim data 'result.pending' ke fungsi pengisi dropdown
+      if (result.pending && result.pending.length > 0) {
+        // Simpan ke memori lokal HP
+        manageLocalJobs('SYNC_LIST', { name: result.name, list: result.pending });
+        // Isi dropdown secara instan
+        fillJobFinishList(result.pending);
+        // Jalankan label status "Sedang Bekerja"
+        updateDashboardStatus();
+      } else {
+        document.getElementById('jobList').innerHTML = '<option value="">-- Tidak ada pekerjaan aktif --</option>';
+      }
+      
+    } else {
+      // Handle perangkat tidak dikenal...
+    }
+  }).checkUserByDevice(myDeviceId);
+}
+
+function fillJobFinishList(pendingList) {
+  const sel = document.getElementById('jobList');
+  if (!sel) return;
+
+  // Jika parameter pendingList tidak dikirim, coba ambil dari localStorage
+  const list = pendingList || JSON.parse(localStorage.getItem('siaksi_pending_jobs')) || [];
+
+  if (list.length === 0) {
+    sel.innerHTML = '<option value="">-- Tidak ada pekerjaan aktif --</option>';
+    updateButtonBadges(0); // Sembunyikan badge merah
+    return;
+  }
+
+  // Isi dropdown dengan data tunggakan
+  let html = '<option value="">-- Pilih Pekerjaan --</option>';
+  list.forEach(j => {
+    html += `<option value="${j.id}">${j.desc} (${j.id})</option>`;
+  });
+  sel.innerHTML = html;
+
+  // Update badge jumlah tunggakan di tombol dashboard
+  updateButtonBadges(list.length);
+}
+
+function openFinishForm() {
+  // 1. Ambil nama dari memori dan tampilkan di label modal
+  const currentUser = localStorage.getItem('siaksi_user_name');
+  const displayElement = document.getElementById('displayNamaSelesai');
+  
+  if (displayElement && currentUser) {
+    displayElement.innerText = currentUser;
+  }
+
+  // 2. Jalankan fungsi filter pekerjaan tadi
+  fillJobFinishList();
+
+  // 3. Tampilkan modal (sesuai cara Anda membuka modal)
+  document.getElementById('modalFinish').classList.remove('hidden');
+}
+
+function updateDashboardStatus() {
+  const jobs = JSON.parse(localStorage.getItem('siaksi_pending_jobs')) || [];
+  const container = document.getElementById('active-status-container');
+  const timerEl = document.getElementById('active-job-timer');
+  const currentUser = localStorage.getItem('siaksi_user_name');
+
+  // Filter pekerjaan milik user saat ini
+  const myJobs = jobs.filter(j => j.name === currentUser);
+
+  if (myJobs.length > 0) {
+    if(container) container.classList.remove('hidden');
+    const startTime = myJobs[0].time;
+    
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      const diff = new Date().getTime() - startTime;
+      const hours = Math.floor(diff / 3600000);
+      const mins = Math.floor((diff % 3600000) / 60000);
+      const secs = Math.floor((diff % 60000) / 1000);
+      if(timerEl) timerEl.innerText = `${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    }, 1000);
+  } else {
+    if(container) container.classList.add('hidden');
+    if (timerInterval) clearInterval(timerInterval);
+  }
+}
+
+function lockEmployeeName(name) {
+  // Daftar ID dropdown nama di berbagai form Anda
+  const nameFields = ['namaStart', 'namaFinish', 'namaIzin', 'namaHistory'];
+
+  nameFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.value = name;      // Isi dengan nama hasil Auto Login
+      el.disabled = true;   // Kunci agar tidak bisa diklik (GREYED OUT)
+      el.classList.add('bg-slate-100', 'text-slate-500', 'cursor-not-allowed'); 
+    }
+  });
+
+  // Tampilkan nama di Dashboard jika ada elemennya
+  const dashboardName = document.getElementById('user-display-name');
+  if (dashboardName) dashboardName.innerText = name;
+}
+
+
+function showSmartNotification(name, pendingCount) {
+  if (name && pendingCount > 0) {
+    // NOTIFIKASI PERINGATAN (TIDAK MEMAKSA REDIRECT)
+    Swal.fire({
+      title: 'INFO TUNGGAKAN',
+      html: `
+        <div class="text-left">
+          Halo <b>${name}</b>,<br>
+          Saat ini Anda memiliki <b>${pendingCount} tunggakan</b> kegiatan yang sedang diproses.
+          <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-3 my-2 rounded-r-md text-[10px] shadow-sm">
+            <i class="fa-solid fa-info-circle mr-1"></i>
+            Anda tetap bisa memulai pekerjaan baru, namun jangan lupa selesaikan yang lama ya!
+          </div>
+        </div>
+      `,
+      icon: 'info',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 5000,
+      timerProgressBar: true
+    });
+  } else if (name) {
+    // Sambutan Normal
+    Swal.fire({
+      title: `Selamat Bekerja, ${name.split(' ')[0]}!`,
+      icon: 'success',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000
+    });
+  }
+}
+
+// Update fungsi manageLocalJobs bagian ADD agar notifikasi muncul saat mulai kerja baru
+function manageLocalJobs(action, data) {
+  const KEY = 'siaksi_pending_jobs';
+  let jobs = JSON.parse(localStorage.getItem(KEY)) || [];
+  const currentUserName = data.name || localStorage.getItem('siaksi_last_user');
+
+  if (action === 'ADD') {
+    if (!jobs.find(j => j.id === data.id)) {
+      jobs.push(data);
+    }
+    
+    // Notifikasi jika tunggakan menumpuk
+    const myJobs = jobs.filter(j => j.name === currentUserName);
+    if(myJobs.length > 1) {
+       setTimeout(() => {
+         Swal.fire({
+           icon: 'warning',
+           title: 'Catatan!',
+           text: `Anda memiliki ${myJobs.length} pekerjaan aktif.`,
+           timer: 3000,
+           showConfirmButton: false,
+           toast: true,
+           position: 'top'
+         });
+       }, 2500);
+    }
+  } 
+  else if (action === 'REMOVE') {
+    jobs = jobs.filter(j => j.id !== data.id);
+  } 
+  else if (action === 'SYNC_LIST') {
+    // Memisahkan data orang lain dan data user saat ini
+    const otherPeoplesJobs = jobs.filter(j => j.name !== data.name);
+    const newJobs = data.list.map(item => ({
+       id: item.id, 
+       desc: item.desc, 
+       name: data.name,
+       startCoord: item.startCoord,
+       time: item.time || new Date().getTime()
+    }));
+    jobs = [...otherPeoplesJobs, ...newJobs];
+  }
+
+  // SIMPAN KE LOCALSTORAGE
+  localStorage.setItem(KEY, JSON.stringify(jobs));
+
+  // UPDATE VISUAL BADGE PADA TOMBOL (PENTING!)
+  const myCurrentJobs = jobs.filter(j => j.name === currentUserName);
+  if (typeof updateButtonBadges === "function") {
+    updateButtonBadges(myCurrentJobs.length);
+  }
+
+  return jobs;
+}
+
+function setDropdownValue(elementId, valueToSelect) {
+  const select = document.getElementById(elementId);
+  if (!select) return;
+
+  // Jika dropdown masih kosong/loading, tunggu 500ms lalu coba lagi
+  if (select.options.length <= 1) {
+    setTimeout(() => setDropdownValue(elementId, valueToSelect), 500);
+    return;
+  }
+
+  // Proses mencari nama di dalam daftar dropdown
+  let found = false;
+  for (let i = 0; i < select.options.length; i++) {
+    if (select.options[i].value === valueToSelect) {
+      select.selectedIndex = i;
+      found = true;
+      break;
+    }
+  }
+
+  if (found) {
+    // --- INI KUNCINYA ---
+    // Baris di bawah ini akan memaksa browser menjalankan onchange="loadJobs(this.value)"
+    // Seolah-olah user yang mengkliknya sendiri.
+    select.dispatchEvent(new Event('change'));
+    console.log(`System: Berhasil memilih ${valueToSelect} pada ${elementId}`);
+  }
+}
+
+    function updateNetworkStatus() {
+      const el = document.getElementById('network-status');
+      const txt = document.getElementById('status-text');
+      if(navigator.onLine) {
+        el.className = 'st-online status-visible';
+        txt.innerHTML = '<i class="fa-solid fa-wifi"></i> Online';
+        // Auto hide after 3 sec
+        setTimeout(() => { if(navigator.onLine) el.classList.remove('status-visible'); }, 3000);
+      } else {
+        el.className = 'st-offline status-visible';
+        txt.innerHTML = '<i class="fa-solid fa-wifi-slash"></i> Offline (Simpan Lokal)';
+      }
+    }
+
+   function addToQueue(type, data) {
+  const queueId = 'queue_' + new Date().getTime();
+  const payload = { 
+    id: queueId, 
+    type: type, 
+    data: data, 
+    time: new Date().toLocaleString() 
+  };
+  
+  try {
+    localStorage.setItem(queueId, JSON.stringify(payload));
+    updateQueueBadge();
+    Swal.fire({ 
+      icon: 'info', 
+      title: 'Disimpan Offline', 
+      text: 'Data akan dikirim otomatis saat sinyal stabil.',
+      confirmButtonColor: '#334155'
+    }).then(() => closeForm());
+  } catch (e) {
+    // TANGKAP ERROR QUOTA EXCEEDED
+    if (e.name === 'QuotaExceededError') {
+      Swal.fire({
+        icon: 'error',
+        title: 'Memori Penuh!',
+        html: 'Penyimpanan lokal HP penuh.<br>Buka <b>Riwayat</b> dan upload data lama terlebih dahulu.',
+        confirmButtonColor: '#dc2626'
+      });
+    } else {
+      Swal.fire('Error', 'Gagal menyimpan offline: ' + e.message, 'error');
+    }
+  }
+}
+
+    function getQueue() {
+      let items = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('queue_')) items.push(JSON.parse(localStorage.getItem(key)));
+      }
+      return items;
+    }
+
+    async function processQueue() {
+  const items = getQueue();
+  if(items.length === 0) return;
+
+  const el = document.getElementById('network-status');
+  el.className = 'st-sync status-visible';
+  document.getElementById('status-text').innerHTML = `<i class="fa-solid fa-rotate fa-spin"></i> Sync ${items.length} Data...`;
+
+  // Urutkan data berdasarkan waktu (FIFO - First In First Out) agar urutan laporan benar
+  items.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+  for (const item of items) {
+    try {
+      let result;
+      // Kirim data
+      if(item.type === 'start') {
+          result = await runGoogleScript('handleJobStart', item.data);
+      } else {
+          result = await runGoogleScript('handleJobFinish', item.data);
+      }
+
+      // HANYA HAPUS JIKA SUKSES
+      if (result && result.status !== 'error') {
+          localStorage.removeItem(item.id);
+          console.log(`Data ${item.id} berhasil disync`);
+      } else {
+          console.error(`Gagal sync ${item.id}:`, result);
+          // Opsional: Berhenti loop jika error server, agar urutan tidak berantakan
+          // break; 
+      }
+    } catch (e) {
+      console.error("Sync error network/script", e);
+      // Jangan hapus localStorage jika error koneksi/script
+    }
+  }
+  
+  updateQueueBadge();
+  updateNetworkStatus();
+  
+  // Jika semua bersih
+  if (getQueue().length === 0) {
+      Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Semua data tersinkronisasi!', timer: 2000, showConfirmButton: false });
+  }
+}
+
+function startLiveLocationCheck(startCoord) {
+  if (!startCoord || !startCoord.includes(',')) return;
+  const [sLat, sLon] = startCoord.split(',').map(Number);
+  
+  const statusBanner = document.getElementById('live-radius-status');
+  const radiusText = document.getElementById('radius-text');
+  const radiusDist = document.getElementById('radius-dist');
+
+  // Hapus watcher lama jika ada
+  if (currentWatcher) navigator.geolocation.clearWatch(currentWatcher);
+
+  currentWatcher = navigator.geolocation.watchPosition((pos) => {
+    const uLat = pos.coords.latitude;
+    const uLon = pos.coords.longitude;
+    const jarak = getDistanceMeters(sLat, sLon, uLat, uLon);
+    const isSafe = jarak <= 100;
+
+    // Update UI berdasarkan jarak
+    if (isSafe) {
+      statusBanner.className = "mb-4 p-3 rounded-xl flex items-center gap-3 bg-emerald-100 text-emerald-700 border border-emerald-200";
+      radiusText.innerText = "Lokasi Sesuai (Aman)";
+      statusBanner.classList.remove('loc-out'); // Flag untuk tombol kamera
+    } else {
+      statusBanner.className = "mb-4 p-3 rounded-xl flex items-center gap-3 bg-red-100 text-red-700 border border-red-200 loc-out";
+      radiusText.innerText = "Di Luar Radius (Dilarang)";
+    }
+    radiusDist.innerText = `Jarak Anda: ${Math.round(jarak)} meter dari titik awal`;
+    
+  }, (err) => {
+    radiusText.innerText = "GPS Error";
+    radiusDist.innerText = "Pastikan izin lokasi aktif.";
+  }, { enableHighAccuracy: true });
+}
+
+// Listener untuk mendeteksi saat pegawai memilih pekerjaan yang akan diselesaikan
+document.getElementById('jobList').addEventListener('change', function() {
+  const selectedId = this.value;
+  const banner = document.getElementById('live-radius-status');
+  const radiusText = document.getElementById('radius-text');
+  const radiusDist = document.getElementById('radius-dist');
+
+  if (!selectedId || selectedId === "") {
+    if (currentWatcher) navigator.geolocation.clearWatch(currentWatcher);
+    banner.className = "mb-4 p-3 rounded-xl flex items-center gap-3 bg-slate-100 text-slate-500";
+    radiusText.innerText = "Mencari Lokasi...";
+    radiusDist.innerText = "Pilih pekerjaan untuk cek jarak.";
+    return;
+  }
+
+  const jobs = JSON.parse(localStorage.getItem('siaksi_pending_jobs')) || [];
+  const activeJob = jobs.find(j => j.id === selectedId);
+
+  if (activeJob && activeJob.startCoord) {
+    // 1. Jalankan Cek Lokasi Real-time
+    startLiveLocationCheck(activeJob.startCoord);
+
+    // 2. Tampilkan Info Waktu Tunggu
+    const now = new Date().getTime();
+    const startTime = activeJob.time;
+    const diffMins = Math.floor((now - startTime) / (1000 * 60));
+    
+    if (diffMins < 30) {
+      const sisa = 30 - diffMins;
+      radiusText.innerHTML = `⏳ Belum 30 Menit`;
+      radiusDist.innerHTML = `Jarak: Menghitung... <br><b class="text-amber-600">[ Tunggu ${sisa} menit lagi ]</b>`;
+    } else {
+      radiusText.innerHTML = `✅ Durasi Mencukupi`;
+      radiusDist.innerHTML = `Jarak: Menghitung... <br><b class="text-emerald-600">[ Siap dilaporkan ]</b>`;
+    }
+  } else {
+    // Jika koordinat tidak ditemukan di cache HP
+    radiusText.innerText = "Data Lokal Kosong";
+    radiusDist.innerText = "Klik Tombol REFRESH di Dashboard.";
+  }
+});
+
+function manualRefresh() {
+  const icon = document.getElementById('refresh-icon');
+  
+  // 1. Beri efek animasi putar pada ikon
+  if(icon) icon.classList.add('fa-spin');
+  
+  // 2. Tampilkan Toast loading kecil
+  Swal.fire({
+    title: 'Menyinkronkan...',
+    toast: true,
+    position: 'top',
+    showConfirmButton: false,
+    timer: 2000,
+    didOpen: () => {
+      // 3. Panggil ulang fungsi inti aplikasi
+      if (navigator.onLine) {
+        // Ambil ulang Galeri
+        loadGallery();
+        
+        // Cek ulang Status Pegawai & Tunggakan ke Server
+        runAutoLogin(); 
+        
+        // Ambil ulang List Pegawai (jika ada update di spreadsheet)
+        google.script.run.withSuccessHandler((data) => {
+          localStorage.setItem('siaksi_staff', JSON.stringify(data));
+          fillStaff(data);
+        }).getStaffList();
+
+      } else {
+        Swal.fire({ icon: 'warning', title: 'Mode Offline', text: 'Tidak dapat refresh data server.', toast: true, position: 'top', timer: 2000, showConfirmButton: false });
+      }
+    }
+  });
+
+  // 4. Hentikan animasi putar setelah 2 detik
+  setTimeout(() => {
+    if(icon) icon.classList.remove('fa-spin');
+  }, 2000);
+}
+
+function updateQueueBadge(count) {
+  const badge = document.getElementById('queue-badge'); // Pastikan ID ini ada di HTML Anda
+  if (!badge) return;
+
+  if (count > 0) {
+    badge.innerText = count;
+    badge.classList.remove('hidden');
+  } else {
+    badge.innerText = "0";
+    badge.classList.add('hidden'); // Sembunyikan jika tidak ada tunggakan
+  }
+}
+
+    function runGoogleScript(funcName, data) {
+      return new Promise((resolve, reject) => {
+        google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[funcName](data);
+      });
+    }
+
+    // --- 4. CORE LOGIC ---
+    function getLocation() {
+      if(navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          p => coords = `${p.coords.latitude},${p.coords.longitude}`,
+          e => console.log("GPS Error")
+        );
+      }
+    }
+
+function openForm(type) {
+  // Cek jika data masih loading
+  const nameSelect = document.getElementById('namaStart');
+  if (nameSelect && nameSelect.options.length <= 1) {
+    // Jika masih memuat, coba ambil lagi secara paksa
+    google.script.run.withSuccessHandler(fillStaff).getStaffList();
+  }
+
+  getLocation();
+  document.getElementById('menu-view').classList.add('hidden');
+  document.querySelectorAll('[id^="form-"]').forEach(f => f.classList.add('hidden'));
+  
+  const targetForm = document.getElementById(`form-${type}`);
+  if (targetForm) targetForm.classList.remove('hidden');
+
+  if (type === 'finish') {
+    const savedUser = localStorage.getItem('siaksi_user_name');
+    if (savedUser) setDropdownValue('namaFinish', savedUser);
+  }
+}
+
+ function fillStaff(data) {
+  if (!data || data.length === 0) return;
+  
+  let opts = '<option value="">-- Pilih Nama --</option>';
+  data.forEach(n => {
+    opts += `<option value="${n}">${n}</option>`;
+  });
+  
+  const ids = ['namaStart', 'namaFinish', 'namaHistory', 'namaIzin'];
+  ids.forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.innerHTML = opts;
+    }
+  });
+  
+  // Setelah data terisi, coba set value jika user sudah login sebelumnya
+  const savedUser = localStorage.getItem('siaksi_user_name');
+  if (savedUser) {
+    lockEmployeeName(savedUser);
+  }
+}
+
+
+
+function startAutoSlide() {
+  const container = document.getElementById('gallery-carousel');
+  if (!container) return;
+
+  // Bersihkan interval jika sebelumnya sudah ada
+  if (autoSlideInterval) clearInterval(autoSlideInterval);
+
+  autoSlideInterval = setInterval(() => {
+    const maxScroll = container.scrollWidth - container.clientWidth;
+    
+    // Jika sudah di ujung kanan, balik ke kiri
+    if (container.scrollLeft >= maxScroll - 5) {
+      container.scrollTo({ left: 0, behavior: 'smooth' });
+    } else {
+      // Geser satu item (lebar item 200px + gap 12px)
+      container.scrollBy({ left: 212, behavior: 'smooth' });
+    }
+  }, 4000); // Bergeser setiap 4 detik
+
+  // Fitur Interaktif: Berhenti saat disentuh/ditekan
+  container.addEventListener('mouseenter', () => clearInterval(autoSlideInterval));
+  container.addEventListener('touchstart', () => clearInterval(autoSlideInterval));
+  
+  // Jalan lagi saat dilepas
+  container.addEventListener('mouseleave', startAutoSlide);
+  container.addEventListener('touchend', startAutoSlide);
+}
+
+function loadJobs(name) {
+  if (!name) return;
+  const sel = document.getElementById('jobList');
+  sel.innerHTML = '<option value="">-- Mencari Pekerjaan... --</option>';
+
+  // 1. Ambil dari Cache Lokal (Instan)
+  const localData = getLocalJobs(name);
+  if (localData.length > 0) {
+    renderJobOptions(localData);
+  }
+
+  // 2. Ambil dari Server (Update terbaru)
+  if (navigator.onLine) {
+    google.script.run.withSuccessHandler(serverJobs => {
+      if (serverJobs && serverJobs.length > 0) {
+        renderJobOptions(serverJobs);
+        // Update cache lokal agar sinkron
+        manageLocalJobs('SYNC_LIST', { name: name, list: serverJobs });
+      } else if (!localData.length) {
+        sel.innerHTML = '<option value="">-- Tidak ada pending --</option>';
+      }
+    }).getOpenJobs(name);
+  }
+}
+
+function renderJobOptions(jobs) {
+  const sel = document.getElementById('jobList');
+  if (jobs.length === 0) {
+    sel.innerHTML = '<option value="">-- Tidak ada pending --</option>';
+  } else {
+    // Urutkan pekerjaan: Yang paling lama (First In) muncul paling atas
+    // Asumsi: j.id mengandung timestamp atau data dari server sudah urut
+    const sortedJobs = jobs.sort((a, b) => a.id.localeCompare(b.id));
+
+    let html = '<option value="">-- Pilih Pekerjaan --</option>';
+    sortedJobs.forEach((j, index) => {
+      const label = index === 0 ? `⚠️ [PRIORITAS] ${j.desc}` : j.desc;
+      html += `<option value="${j.id}">${label}</option>`;
+    });
+    sel.innerHTML = html;
+  }
+}
+
+function checkRadiusBeforeCamera(event) {
+  const banner = document.getElementById('live-radius-status');
+  
+  if (banner && banner.classList.contains('loc-out')) {
+    event.preventDefault();
+    Swal.fire({
+      icon: 'error',
+      title: 'Akses Ditolak',
+      text: 'Anda berada di luar radius 100m. Silakan mendekat ke lokasi awal kegiatan.',
+      confirmButtonColor: '#ef4444'
+    });
+    return false;
+  }
+}
+
+ function processImage(input, imgId, hiddenId) {
+  // 1. Cek apakah ada file
+  if (!input.files || !input.files[0]) return;
+
+  // 2. Tampilkan Loading (Biar user tau aplikasi sedang bekerja)
+  Swal.fire({
+    title: 'Memproses Foto...',
+    html: 'Menambahkan Watermark & Kompresi',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  const reader = new FileReader();
+  
+  reader.onload = function(e) {
+    const img = new Image();
+    
+    img.onload = function() {
+      // --- LOGIKA BARU: HANDLE LOGO SAAT OFFLINE ---
+      const logoIcon = new Image();
+      logoIcon.crossOrigin = "anonymous"; 
+      
+      let isRendered = false; // Flag agar tidak render 2 kali
+      
+      // Fungsi pembantu untuk finalize
+      const doRender = (useLogo) => {
+         if (isRendered) return; // Stop jika sudah pernah dirender
+         isRendered = true;
+         
+         // Panggil fungsi renderCanvas (kirim null jika logo gagal)
+         renderCanvas(img, useLogo ? logoIcon : null, imgId, hiddenId);
+      };
+
+      // A. Jika Online & Logo Sukses Dimuat
+      logoIcon.onload = function() {
+        doRender(true);
+      };
+
+      // B. Jika Offline / Logo Error (Gagal Download) -> Tetap Lanjut!
+      logoIcon.onerror = function() {
+        console.warn("Offline Mode: Logo gagal dimuat, menggunakan text fallback.");
+        doRender(false); // Lanjut tanpa logo
+      };
+
+      // C. Timeout Penyelamat (Jika browser loading logo kelamaan/macet)
+      // Batas waktu tunggu cuma 1.5 detik. Kalau lewat, paksa render tanpa logo.
+      setTimeout(() => {
+        if (!isRendered) {
+           console.warn("Timeout: Logo loading too slow, skipping.");
+           logoIcon.src = ""; // Stop loading
+           doRender(false);
+        }
+      }, 1500);
+
+      // Mulai load logo (ini yang memicu error jika offline)
+      // Cek dulu apakah variabel SCHOOL_LOGO ada isinya
+      if (typeof SCHOOL_LOGO !== 'undefined' && SCHOOL_LOGO) {
+          logoIcon.src = SCHOOL_LOGO;
+      } else {
+          doRender(false);
+      }
+    };
+
+    img.src = e.target.result;
+  };
+
+  reader.readAsDataURL(input.files[0]);
+}
+
+// --- FUNGSI RENDER UTAMA (OPTIMIZED) ---
+function renderCanvas(img, logoIcon, imgId, hiddenId) {
+  const cvs = document.getElementById('watermarkCanvas');
+  const ctx = cvs.getContext('2d');
+  
+  // 1. CEK STATUS KONEKSI
+  // Jika offline, kita harus sangat hemat memori (localStorage max 5MB)
+  const isOffline = !navigator.onLine;
+
+  // 2. TENTUKAN DIMENSI BARU (SMART RESIZE)
+  // Online: Max 1280px (Jelas), Offline: Max 800px (Hemat)
+  const maxW = isOffline ? 800 : 1280; 
+  
+  let w = img.width;
+  let h = img.height;
+  
+  // Hitung rasio aspek agar foto tidak gepeng
+  if (w > maxW) {
+    h *= maxW / w;
+    w = maxW;
+  }
+
+  // Set ukuran canvas (ini otomatis membersihkan canvas lama)
+  cvs.width = w;
+  cvs.height = h;
+
+  // 3. GAMBAR FOTO UTAMA
+  // Menggunakan smoothing agar hasil resize tidak pecah
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, w, h);
+  
+  // 4. GAMBAR WATERMARK
+  // Kita panggil helper drawText. Logo dikirim apa adanya (bisa object gambar atau null)
+  // Pastikan fungsi drawText() Anda sudah ada di bawah
+  drawText(ctx, w, h, logoIcon);
+
+  // 5. KONVERSI KE BASE64 (SMART COMPRESSION)
+  // Online: Kualitas 0.7 (Standar bagus)
+  // Offline: Kualitas 0.4 (Agak buram tapi ukuran file KECIL)
+  const quality = isOffline ? 0.4 : 0.7;
+  
+  const res = cvs.toDataURL('image/jpeg', quality); 
+  
+  // --- DEBUG UKURAN FILE (Cek Console Browser) ---
+  // Rumus estimasi ukuran Base64 ke Kilobyte
+  const sizeInKb = (res.length * (3/4)) / 1024;
+  console.log(`Status: ${isOffline ? 'OFFLINE' : 'ONLINE'} | Dimensi: ${w}x${h} | Quality: ${quality} | Size: ${sizeInKb.toFixed(2)} KB`);
+
+  // Peringatan jika file offline masih terlalu besar (> 500KB riskan buat localStorage)
+  if (isOffline && sizeInKb > 500) {
+      console.warn("⚠️ PERINGATAN: Ukuran file offline agak besar. Pertimbangkan menurunkan maxW menjadi 600px.");
+  }
+
+  // 6. TAMPILKAN KE UI & SIMPAN KE INPUT HIDDEN
+  const previewEl = document.getElementById(imgId);
+  const hiddenEl = document.getElementById(hiddenId);
+  
+  if(previewEl && hiddenEl) {
+    previewEl.src = res;
+    previewEl.classList.remove('hidden'); // Munculkan tag img
+    hiddenEl.value = res; // Simpan string base64 untuk dikirim
+  }
+  
+  // 7. TUTUP LOADING SCREEN
+  Swal.close(); 
+}
+    
+ 
+
+// --- FUNGSI WATERMARK LENGKAP (POSISI POJOK KIRI BAWAH) ---
+function drawText(ctx, w, h, logoIcon) {
+  
+  // ============================================================
+  // 1. PERSIAPAN DATA & KONFIGURASI
+  // ============================================================
+  
+  const date = new Date().toLocaleString('id-ID', { 
+    day: 'numeric', month: 'short', year: 'numeric', 
+    hour: '2-digit', minute: '2-digit' 
+  }).replace('.', ':'); // Format jam jadi 12:30
+  
+  const isFinishForm = !document.getElementById('form-finish').classList.contains('hidden');
+  
+  let petugas = '';
+  let keg = '';
+  let accentColor = '#10b981'; // Hijau (Start)
+  
+  if (isFinishForm) {
+    petugas = document.getElementById('namaFinish').value || 'Unknown';
+    const jobSel = document.getElementById('jobList');
+    if (jobSel && jobSel.selectedIndex > 0) {
+      // Ambil nama kegiatan saja, buang lokasi dalam kurung
+      keg = jobSel.options[jobSel.selectedIndex].text.split(' (')[0]; 
+    } else {
+      keg = 'Laporan Selesai';
+    }
+    accentColor = '#0ea5e9'; // Biru (Finish)
+  } else {
+    petugas = document.getElementById('namaStart').value || 'Unknown';
+    keg = document.getElementById('kegiatan').value || 'Kegiatan Tidak Diisi';
+    accentColor = '#10b981'; 
+  }
+  
+  // Konfigurasi Ukuran Dasar (Responsive terhadap lebar foto)
+  // Base size sedikit diperbesar agar lebih jelas di pojok
+  const baseSize = w * 0.04; 
+  const padding = baseSize * 0.8; // Padding standar
+  
+  // ============================================================
+  // 2. GAMBAR HEADER ATAS (Kegiatan) - TETAP DIPERTAHANKAN
+  // ============================================================
+  
+  ctx.font = `800 ${baseSize * 0.8}px sans-serif`; 
+  const maxTextW = w - (padding * 3); 
+  // Fungsi wrapText diasumsikan sudah ada di kode Anda sebelumnya
+  const lines = wrapText(ctx, keg.toUpperCase(), maxTextW); 
+  
+  const lineHeight = baseSize * 1.1; 
+  // Tinggi header menyesuaikan jumlah baris teks
+  const headerHeight = (padding * 2) + (lines.length * lineHeight);
+
+  // A. Background Gradient Atas (Lebih gelap agar teks putih jelas)
+  const grdTop = ctx.createLinearGradient(0, 0, 0, headerHeight + padding);
+  grdTop.addColorStop(0, "rgba(0,0,0,0.85)");
+  grdTop.addColorStop(0.7, "rgba(0,0,0,0.5)");
+  grdTop.addColorStop(1, "rgba(0,0,0,0.0)");
+  ctx.fillStyle = grdTop;
+  ctx.fillRect(0, 0, w, headerHeight + padding);
+  
+  // B. Garis Aksen Warna di paling atas
+  ctx.fillStyle = accentColor;
+  // Sedikit lebih tebal
+  ctx.fillRect(0, 0, w, baseSize * 0.2);
+  
+  // C. Render Teks Kegiatan
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  
+  // Tambah bayangan tipis agar teks lebih "pop"
+  ctx.shadowColor = "rgba(0,0,0,0.8)";
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetX = 1;
+  ctx.shadowOffsetY = 1;
+  
+  let textY = padding + (baseSize * 0.3);
+  lines.forEach((line) => {
+    ctx.fillText(line, padding, textY);
+    textY += lineHeight;
+  });
+  
+  // Reset shadow untuk bagian bawah
+  ctx.shadowColor = "transparent";
+
+  // ============================================================
+  // 3. BAGIAN FOOTER (POJOK KIRI BAWAH)
+  // ============================================================
+  
+  // Ukuran Logo
+  const logoSize = baseSize * 3.5; 
+  // Tinggi area footer
+  const botH = logoSize + (padding * 2);
+  
+  // Background Gradient Bawah (Gelap di bawah, transparan ke atas)
+  const grdBot = ctx.createLinearGradient(0, h - botH, 0, h);
+  grdBot.addColorStop(0, "rgba(0,0,0,0.0)");
+  grdBot.addColorStop(0.3, "rgba(0,0,0,0.6)");
+  grdBot.addColorStop(1, "rgba(0,0,0,0.9)");
+  ctx.fillStyle = grdBot;
+  ctx.fillRect(0, h - botH, w, botH);
+  
+  // --- POSISI ELEMEN POJOK KIRI BAWAH ---
+  
+  // Koordinat Y dasar untuk elemen bawah (dihitung dari bawah ke atas)
+  const bottomBaseY = h - padding;
+  
+  // 1. Posisi Logo (Paling Kiri)
+  const logoX = padding;
+  // Logo diletakkan di atas padding bawah
+  const logoY = bottomBaseY - logoSize; 
+
+  // Render Logo
+  if (logoIcon && logoIcon.complete && logoIcon.naturalWidth > 0) {
+      // Simpan state canvas sebelum membuat kliping lingkaran
+      ctx.save();
+      // Buat jalur lingkaran untuk memotong logo
+      ctx.beginPath();
+      // Pusat lingkaran ada di tengah area logo
+      ctx.arc(logoX + logoSize/2, logoY + logoSize/2, logoSize/2, 0, Math.PI * 2, true);
+      ctx.closePath();
+      ctx.clip(); // Potong area gambar mengikuti lingkaran
+
+      // Gambar logo di dalam area yang sudah dipotong
+      ctx.drawImage(logoIcon, logoX, logoY, logoSize, logoSize);
+      
+      // Kembalikan state canvas (agar gambar lain tidak ikut terpotong lingkaran)
+      ctx.restore();
+
+      // Opsional: Tambah border putih tipis di sekeliling lingkaran logo
+      ctx.beginPath();
+      ctx.arc(logoX + logoSize/2, logoY + logoSize/2, logoSize/2, 0, Math.PI * 2, true);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.lineWidth = baseSize * 0.05;
+      ctx.stroke();
+
+  } else {
+      // Fallback jika logo gagal load (Kotak dashed)
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.setLineDash([5, 3]); // Garis putus-putus
+      ctx.strokeRect(logoX, logoY, logoSize, logoSize);
+      ctx.setLineDash([]); // Reset garis
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.textAlign = 'center';
+      ctx.font = `bold ${baseSize*0.6}px sans-serif`;
+      ctx.fillText('NO LOGO', logoX + (logoSize/2), logoY + (logoSize/2));
+  }
+  
+  // 2. Posisi Teks (Nama & Tanggal) - Di sebelah kanan logo
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom'; // Patokan koordinat di bawah teks
+  
+  const textStartX = logoX + logoSize + (padding * 0.8); // Jarak antara logo dan teks
+  
+  // Nama Pegawai (Lebih Besar & Tebal)
+  ctx.font = `900 ${baseSize * 1.1}px 'Plus Jakarta Sans', sans-serif`;
+  ctx.fillStyle = '#ffffff';
+  // Posisi Y: sedikit di atas garis dasar bawah
+  ctx.fillText(petugas.toUpperCase(), textStartX, bottomBaseY - (baseSize * 1.0));
+  
+  // Tanggal (Lebih Kecil, di bawah nama)
+  ctx.font = `600 ${baseSize * 0.75}px monospace`;
+  ctx.fillStyle = accentColor; // Gunakan warna aksen agar menarik
+  // Posisi Y: tepat di garis dasar bawah
+  ctx.fillText(date, textStartX, bottomBaseY);
+  
+  // ============================================================
+  // 4. KOORDINAT GPS (POJOK KANAN BAWAH) - SEBAGAI PENYEIMBANG
+  // ============================================================
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.font = `500 ${baseSize * 0.6}px monospace`;
+  ctx.fillStyle = '#cbd5e1'; // Warna agak redup agar tidak dominan
+  
+  const coordText = (typeof coords !== 'undefined' && coords) ? coords : 'No GPS Data';
+  // Posisi di pojok kanan bawah
+  ctx.fillText(coordText, w - padding, h - (padding * 0.5));
+}
+
+/**
+ * Fungsi Helper untuk memecah teks panjang menjadi array baris
+ * @param {CanvasRenderingContext2D} ctx - Context canvas
+ * @param {string} text - Teks asli
+ * @param {number} maxWidth - Lebar maksimal dalam px
+ * @returns {Array} Array berisi string per baris
+ */
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  let lines = [];
+  let currentLine = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    let word = words[i];
+    let width = ctx.measureText(currentLine + " " + word).width;
+    
+    if (width < maxWidth) {
+      currentLine += " " + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  lines.push(currentLine);
+  
+  // Batasi maksimal 5 baris agar tidak menutupi seluruh foto
+  if (lines.length > 5) {
+     lines = lines.slice(0, 4);
+     lines.push('...'); // Tambahkan indikator teks kepotong jika terlalu panjang banget
+  }
+  
+  return lines;
+}
+
+function getDistanceMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; // Radius bumi dalam meter
+  const φ1 = lat1 * Math.PI/180;
+  const φ2 = lat2 * Math.PI/180;
+  const Δφ = (lat2-lat1) * Math.PI/180;
+  const Δλ = (lon2-lon1) * Math.PI/180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+          Math.cos(φ1) * Math.cos(φ2) *
+          Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c; // Hasil dalam meter
+}
+
+
+/**
+ * Render fallback logo jika logo utama gagal dimuat
+ * @param {CanvasRenderingContext2D} ctx - Context canvas
+ * @param {number} x - Posisi X
+ * @param {number} y - Posisi Y
+ * @param {number} size - Ukuran logo
+ * @param {number} baseSize - Ukuran dasar font
+ */
+function renderLogoFallback(ctx, x, y, size, baseSize) {
+  // Gambar kotak placeholder
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.fillRect(x, y, size, size);
+  
+  // Gambar border
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, size, size);
+  
+  // Gambar teks "LOGO"
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = `700 ${baseSize * 0.6}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('SMKPP', x + (size / 2), y + (size / 2) - (baseSize * 0.3));
+  ctx.font = `600 ${baseSize * 0.4}px sans-serif`;
+  ctx.fillText('BIMA', x + (size / 2), y + (size / 2) + (baseSize * 0.3));
+  
+  // Reset alignment
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+}
+    // --- 8. GPS GATEKEEPER (BARU) ---
+    // Fungsi ini akan dijalankan saat halaman dimuat
+    function forceGPSCheck() {
+      if (!navigator.geolocation) {
+         Swal.fire({icon:'error', title:'Error', text:'Perangkat tidak mendukung GPS.'});
+         return;
+      }
+      
+      // Coba ambil lokasi dengan timeout 10 detik
+      navigator.geolocation.getCurrentPosition(
+        (p) => {
+           // SUKSES: GPS Aktif & Diizinkan
+           coords = `${p.coords.latitude},${p.coords.longitude}`;
+           console.log("GPS Gatekeeper: Lolos");
+           // Tidak melakukan apa-apa, biarkan user masuk
+        },
+        (e) => {
+           // GAGAL: GPS Mati / Izin Ditolak
+           console.log("GPS Gatekeeper: Gagal", e);
+           showBlockingModal();
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    function showBlockingModal() {
+      Swal.fire({
+        title: 'GPS WAJIB AKTIF',
+        icon: 'warning',
+        html: `
+          <div class="text-left text-sm">
+            <p class="mb-3">Aplikasi ini membutuhkan lokasi akurat untuk validasi kehadiran.</p>
+            <ol class="list-decimal pl-5 space-y-1 mb-4">
+              <li>Buka <b>Pengaturan / Notification Shade</b> HP Anda.</li>
+              <li>Nyalakan <b>Lokasi / GPS</b>.</li>
+              <li>Jika muncul popup izin browser, pilih <b>"Izinkan" (Allow)</b>.</li>
+            </ol>
+          </div>
+        `,
+        allowOutsideClick: false, // Tidak bisa ditutup klik luar
+        allowEscapeKey: false,    // Tidak bisa ditutup tombol Esc
+        showConfirmButton: true,
+        confirmButtonText: 'SAYA SUDAH MENYALAKAN GPS',
+        confirmButtonColor: '#059669',
+        showDenyButton: true,
+        denyButtonText: 'Reload Halaman',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Cek ulang (Recursive)
+          Swal.fire({title:'Mengecek GPS...', didOpen:()=>Swal.showLoading()});
+          setTimeout(forceGPSCheck, 1000); // Beri jeda 1 detik agar HP merespon
+        } else if (result.isDenied) {
+          location.reload();
+        }
+      });
+    }
+
+    // --- 6. HISTORY LOGIC ---
+    function openHistory() {
+      document.getElementById('modal-history').classList.remove('hidden');
+      document.getElementById('hist-date').innerText = new Date().toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'long'});
+      
+      const prevName = document.getElementById('namaStart').value;
+      if(prevName && prevName !== 'Memuat Data...') {
+        document.getElementById('namaHistory').value = prevName;
+        loadHistoryData();
+      }
+    }
+
+    function loadHistoryData() {
+      const nama = document.getElementById('namaHistory').value;
+      const container = document.getElementById('history-content');
+      
+      if(!nama || nama.includes('Pilih')) return;
+      
+      container.innerHTML = '<div class="text-center mt-10"><i class="fa-solid fa-circle-notch fa-spin text-emerald-500 text-3xl"></i></div>';
+      
+      if(!navigator.onLine) {
+        container.innerHTML = '<div class="text-center text-red-500 mt-10 font-bold">Offline: Tidak bisa ambil data server.</div>';
+        return;
+      }
+
+      google.script.run
+        .withFailureHandler(err => {
+           container.innerHTML = '<div class="text-center text-red-400 mt-10">Gagal memuat data.</div>';
+        })
+        .withSuccessHandler(data => {
+          if(!data || data.length === 0) {
+            container.innerHTML = `
+              <div class="flex flex-col items-center justify-center mt-10 text-slate-400 gap-2">
+                <i class="fa-regular fa-folder-open text-4xl opacity-50"></i>
+                <p>Belum ada data hari ini.</p>
+              </div>`;
+            return;
+          }
+          
+          let html = '';
+          data.forEach(item => {
+            const badgeClass = item.status === 'SELESAI' ? 'badge-green' : 'badge-yellow';
+            const icon = item.status === 'SELESAI' ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-clock"></i>';
+            html += `
+              <div class="history-item">
+                <div class="flex-1">
+                  <div class="font-bold text-slate-700 text-base leading-snug">${item.kegiatan}</div>
+                  <div class="text-xs font-semibold text-slate-400 mt-1 flex gap-2 items-center">
+                    <i class="fa-regular fa-clock"></i> ${item.jamMulai} - ${item.jamSelesai}
+                  </div>
+                </div>
+                <span class="badge ${badgeClass} ml-2 flex items-center gap-1">${icon} ${item.status}</span>
+              </div>
+            `;
+          });
+          container.innerHTML = html;
+        })
+        .getHistoryHarian(nama);
+    }
+
+    // --- DI DALAM SCRIPT Index.html ---
+
+// ==========================================
+// 3. SUBMIT START (LAPOR AWAL)
+// ==========================================
+function submitStart() {
+  // 1. Validasi GPS (Paling Utama)
+  if (!coords || coords === "" || coords === "0,0") {
+    return Swal.fire({
+      icon: 'warning',
+      title: 'GPS Belum Siap',
+      text: 'Sistem sedang mengunci lokasi akurat. Pastikan GPS HP aktif dan tunggu indikator lokasi muncul.',
+      confirmButtonColor: '#059669'
+    });
+  }
+
+  // 2. Ambil Data dari Form
+  const d = {
+    namaPegawai: document.getElementById('namaStart').value,
+    kegiatan: document.getElementById('kegiatan').value.trim(),
+    lokasiKerja: document.getElementById('lokasi').value.trim(),
+    imageDataBefore: document.getElementById('valBefore').value,
+    koordinatStart: coords, 
+    deviceId: getDeviceId() // IDENTITAS PERANGKAT
+  };
+
+  // 3. Validasi Input Kosong & Aturan
+  if (!d.namaPegawai || d.namaPegawai.includes("Pilih")) {
+    return Swal.fire('Nama Kosong', 'Silakan pilih nama pegawai.', 'error');
+  }
+  if (!d.kegiatan || d.kegiatan.length < 5) {
+    return Swal.fire('Kegiatan Kurang Jelas', 'Tuliskan uraian kegiatan minimal 5 karakter.', 'error');
+  }
+  if (!d.imageDataBefore) {
+    return Swal.fire('Foto Bukti', 'Wajib mengambil foto kondisi AWAL kegiatan sesuai instruksi.', 'error');
+  }
+
+  // 4. Proses Pengiriman ke Server
+  const btn = document.getElementById('btnStart');
+  const originalTxt = btn.innerHTML;
+  
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MEMVERIFIKASI PERANGKAT...';
+  btn.disabled = true;
+
+  google.script.run.withSuccessHandler(r => {
+    btn.innerHTML = originalTxt;
+    btn.disabled = false;
+
+    if (r.status === 'error') {
+      // Jika error (misal: Device ID tidak cocok atau duplikasi kegiatan)
+      Swal.fire({
+        icon: 'warning',
+        title: 'Akses Ditolak',
+        text: r.msg,
+        confirmButtonColor: '#dc2626'
+      });
+    } else {
+      // BERHASIL:
+      manageLocalJobs('ADD', { 
+        id: r.id, 
+        desc: d.kegiatan, 
+        name: d.namaPegawai, 
+        startCoord: coords,
+        time: new Date().getTime() // Simpan timestamp untuk deteksi 24 jam lokal
+      });
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Laporan Awal Terkirim',
+        text: 'Selamat bekerja! Selesaikan laporan ini sebelum 24 jam agar tidak kadaluwarsa.',
+        timer: 3000,
+        showConfirmButton: false
+      }).then(() => {
+        closeForm();
+        if(typeof updateTimestamp === 'function') updateTimestamp();
+      });
+    }
+  }).withFailureHandler(err => {
+    btn.innerHTML = originalTxt;
+    btn.disabled = false;
+    Swal.fire('Koneksi Gagal', 'Server sedang sibuk atau internet tidak stabil.', 'error');
+  }).handleJobStart(d);
+}
+
+function submitFinish() {
+  const jobId = document.getElementById('jobList').value;
+  const imageDataAfter = document.getElementById('valAfter').value;
+  const banner = document.getElementById('live-radius-status');
+  const btn = document.getElementById('btnFinish');
+
+  // 1. Validasi Input
+  if (!jobId || jobId === "") {
+    return Swal.fire('Pilih Kegiatan', 'Pilih laporan yang ingin diselesaikan!', 'warning');
+  }
+  if (!imageDataAfter) {
+    return Swal.fire('Foto Hasil', 'Wajib memfoto HASIL PEKERJAAN (Output)!', 'error');
+  }
+
+  // 2. Ambil data dari cache lokal untuk verifikasi waktu & lokasi
+  const jobs = JSON.parse(localStorage.getItem('siaksi_pending_jobs')) || [];
+  const activeJob = jobs.find(j => j.id === jobId);
+
+  if (!activeJob) {
+    return Swal.fire('Error Sinkron', 'Data pekerjaan tidak ditemukan di memori HP. Silakan klik tombol Refresh di Dashboard.', 'error');
+  }
+
+  // 3. Proteksi Radius 100M
+  if (banner && banner.classList.contains('loc-out')) {
+    return Swal.fire({
+      icon: 'error',
+      title: 'Lokasi Tidak Sesuai',
+      text: 'Anda berada di luar radius 100m dari titik awal.',
+      confirmButtonColor: '#ef4444'
+    });
+  }
+
+  // 4. Loading State
+  const originalTxt = btn.innerHTML;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MENGIRIM...';
+  btn.disabled = true;
+
+  const payload = { 
+    jobId: jobId, 
+    imageDataAfter: imageDataAfter, 
+    koordinatEnd: coords || "0,0",
+    deviceId: getDeviceId() 
+  };
+
+  // 5. Kirim ke Server (Code.gs)
+  google.script.run
+    .withSuccessHandler(r => {
+      btn.innerHTML = originalTxt; 
+      btn.disabled = false;
+      
+      if (r.status === 'success') {
+        manageLocalJobs('REMOVE', { id: jobId });
+        Swal.fire({ 
+          icon: 'success', 
+          title: 'Berhasil!', 
+          text: r.msg, 
+          timer: 2500, 
+          showConfirmButton: false 
+        }).then(() => closeForm());
+      } else {
+        Swal.fire('Gagal Verifikasi', r.msg, 'error');
+      }
+    })
+    .withFailureHandler(err => {
+      btn.innerHTML = originalTxt; 
+      btn.disabled = false;
+      Swal.fire('Koneksi Gagal', 'Gagal terhubung ke server. Coba lagi atau gunakan sinyal yang lebih kuat.', 'error');
+    })
+    .handleJobFinish(payload);
+}
+// ==========================================
+// 5. CLOSE FORM (NAVIGASI KE HOME & RESET)
+// ==========================================
+function closeForm() {
+  // 1. HENTIKAN PEMANTAUAN GPS (Penting agar baterai awet)
+  if (currentWatcher) {
+    navigator.geolocation.clearWatch(currentWatcher);
+    currentWatcher = null;
+    console.log("GPS Watcher dihentikan.");
+  }
+
+  // 2. NAVIGASI TAMPILAN
+  // Sembunyikan semua kontainer form yang berawalan id "form-"
+  document.querySelectorAll('[id^="form-"]').forEach(f => {
+    f.classList.add('hidden');
+  });
+  
+  // Sembunyikan modal riwayat jika sedang terbuka
+  const modalHistory = document.getElementById('modal-history');
+  if (modalHistory) modalHistory.classList.add('hidden');
+
+  // Tampilkan kembali Menu Utama / Dashboard
+  const menuView = document.getElementById('menu-view');
+  if (menuView) menuView.classList.remove('hidden');
+
+  // 3. RESET INPUT FORM (Membersihkan sisa ketikan/foto)
+  // Reset Form Lapor Awal
+  document.getElementById('kegiatan').value = "";
+  document.getElementById('lokasi').value = "";
+  document.getElementById('valBefore').value = "";
+  document.getElementById('imgBefore').src = "";
+  document.getElementById('imgBefore').classList.add('hidden');
+
+  // Reset Form Lapor Akhir
+  document.getElementById('jobList').selectedIndex = 0;
+  document.getElementById('valAfter').value = "";
+  document.getElementById('imgAfter').src = "";
+  document.getElementById('imgAfter').classList.add('hidden');
+
+  // Reset Indikator Radius di Form Akhir ke status Standby
+  const banner = document.getElementById('live-radius-status');
+  const radiusText = document.getElementById('radius-text');
+  const radiusDist = document.getElementById('radius-dist');
+  if (banner) {
+    banner.className = "mb-4 p-3 rounded-xl flex items-center gap-3 bg-slate-100 text-slate-500";
+    radiusText.innerText = "Mencari Lokasi...";
+    radiusDist.innerText = "Pilih pekerjaan untuk cek jarak.";
+  }
+
+  // 4. PENYEMPURNAAN AKHIR
+  // Scroll layar kembali ke posisi paling atas secara halus
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Update indikator waktu sinkronisasi terakhir
+  if (typeof updateTimestamp === "function") {
+    updateTimestamp();
+  }
+
+  // Muat ulang galeri agar foto terbaru muncul di dashboard
+  if (typeof loadGallery === "function") {
+    loadGallery();
+  }
+}
+
+function refreshData() {
+  const btn = document.getElementById('btnRefresh'); // Sesuaikan ID tombol refresh Anda
+  if(btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memperbarui...';
+
+  // 1. Ambil data terbaru dari Server (Spreadsheet)
+  google.script.run.withSuccessHandler(data => {
+    if(btn) btn.innerHTML = '<i class="fa-solid fa-sync"></i> Refresh';
+    
+    // Sinkronisasi data pekerjaan yang menggantung
+    if (data.pendingJobs) {
+      const myName = document.getElementById('namaUser').innerText; // Sesuaikan ID nama user
+      manageLocalJobs('SYNC_LIST', { name: myName, list: data.pendingJobs });
+    }
+    
+    // 2. TRIGGER ULANG GPS (PENTING)
+    // Ini memastikan lokasi muncul kembali setelah refresh
+    if (typeof startLiveTracking === "function") {
+      startLiveTracking();
+    }
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Data Diperbarui',
+      text: 'Status pekerjaan dan lokasi telah disinkronkan.',
+      timer: 1500,
+      showConfirmButton: false
+    });
+  }).getLatestData(); // Ganti dengan nama fungsi server Anda untuk ambil data
+}
+
+ // Update fungsi manageLocalJobs bagian ADD agar notifikasi muncul saat mulai kerja baru
+function manageLocalJobs(action, data) {
+  const KEY = 'siaksi_pending_jobs';
+  let jobs = JSON.parse(localStorage.getItem(KEY)) || [];
+
+  if (action === 'ADD') {
+    // Pastikan ID unik dan data lengkap masuk ke cache HP
+    if (!jobs.find(j => j.id === data.id)) {
+      jobs.push({
+        id: data.id,
+        desc: data.desc,
+        name: data.name,
+        startCoord: data.startCoord, // Simpan koordinat awal
+        time: new Date().getTime()    // Simpan waktu detik ini
+      });
+    }
+  } 
+  else if (action === 'REMOVE') {
+    jobs = jobs.filter(j => j.id !== data.id);
+  } 
+  else if (action === 'SYNC_LIST') {
+    const otherPeoplesJobs = jobs.filter(j => j.name !== data.name);
+    const newJobs = data.list.map(item => ({
+       id: item.id, 
+       desc: item.desc, 
+       name: data.name,
+       startCoord: item.startCoord, // Diambil dari kolom spreadsheet
+       time: item.time || (new Date().getTime() - (31 * 60 * 1000)) // Jika sinkron server, anggap sudah cukup waktu
+    }));
+    jobs = [...otherPeoplesJobs, ...newJobs];
+  }
+
+  localStorage.setItem(KEY, JSON.stringify(jobs));
+  return jobs;
+}
+
+function getLocalJobs(namaPegawai) {
+  const KEY = 'siaksi_pending_jobs';
+  const jobs = JSON.parse(localStorage.getItem(KEY)) || [];
+  // Ambil pekerjaan milik pegawai ini saja
+  return jobs.filter(j => j.name === namaPegawai);
+}
+
+// --- FUNGSI DEVICE ID GENERATOR ---
+function getDeviceId() {
+  // Cek apakah HP ini sudah punya KTP Digital (Token)
+  let deviceId = localStorage.getItem('siaksi_device_id');
+  
+  if (!deviceId) {
+    // Jika belum ada, buat ID acak baru yang unik
+    deviceId = 'DEV-' + new Date().getTime() + '-' + Math.random().toString(36).substr(2, 9);
+    // Simpan permanen di browser HP ini
+    localStorage.setItem('siaksi_device_id', deviceId);
+  }
+  return deviceId;
+}
+
+// --- FUNGSI AKSES DASHBOARD (PROTEKSI PASSWORD) ---
+function accessDashboard() {
+  Swal.fire({
+    title: 'Dashboard Pimpinan',
+    text: 'Masukkan Password untuk melihat grafik kinerja.',
+    input: 'password', // Input tipe password (bintang-bintang)
+    inputPlaceholder: 'Kode Akses...',
+    icon: 'lock',
+    showCancelButton: true,
+    confirmButtonText: 'Buka Data',
+    confirmButtonColor: '#0f172a',
+    cancelButtonText: 'Batal',
+    // VALIDASI PASSWORD DISINI (Contoh: "admin123")
+    preConfirm: (pass) => {
+      if (pass !== "admin123") { // <--- GANTI PASSWORD SESUAI KEINGINAN
+        Swal.showValidationMessage('Password Salah!');
+      }
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Jika Password Benar, Redirect ke halaman Dashboard
+      // Kita tambahkan ?page=dashboard di ujung URL saat ini
+      //const currentUrl = "<?= ScriptApp.getService().getUrl() ?>"; // Ambil URL App Script
+      const targetUrl = "https://dashboardekinsmkpp.web.app/";
+      
+      // Buka di tab yang sama
+      window.top.location.href = targetUrl;
+    }
+  });
+}
+
+// --- LOGIKA FORM IZIN ---
+function previewBukti(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('previewBuktiImg').src = e.target.result;
+      document.getElementById('previewBuktiImg').classList.remove('hidden');
+      document.getElementById('valBukti').value = e.target.result; // Base64
+    }
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function submitIzin() {
+  const d = {
+    namaPegawai: document.getElementById('namaIzin').value,
+    tipeIzin: document.getElementById('tipeIzin').value,
+    alasan: document.getElementById('alasanIzin').value,
+    imageBukti: document.getElementById('valBukti').value || ""
+  };
+
+  if(!d.namaPegawai || d.namaPegawai.includes('Pilih') || !d.tipeIzin || !d.alasan) {
+    return Swal.fire('Data Kurang', 'Nama, Tipe, dan Alasan wajib diisi!', 'warning');
+  }
+
+  const btn = document.getElementById('btnIzin');
+  const txt = btn.innerHTML;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> PROSES...'; btn.disabled = true;
+
+  google.script.run.withSuccessHandler(r => {
+    if(r.status === 'success') {
+      Swal.fire('Berhasil', 'Izin tercatat. Get well soon!', 'success').then(() => closeForm());
+    } else {
+      Swal.fire('Gagal', r.msg, 'error');
+    }
+    btn.innerHTML = txt; btn.disabled = false;
+  }).handleAbsence(d);
+}
+
+// ==========================================
+// FITUR GEMINI AI GENERATOR (VERSI SERVER - STABIL)
+// ==========================================
+
+function generateAIKegiatan() {
+  const inputEl = document.getElementById('kegiatan');
+  const originalText = inputEl.value.trim();
+
+  if (originalText.length < 3) {
+    Swal.fire({ icon: 'info', title: 'Ketik Dulu', text: 'Tulis kata kunci kegiatan (cth: sapu halaman)' });
+    return;
+  }
+
+  // Tanda Loading pada tombol
+  const btnAI = document.querySelector('button[onclick="generateAIKegiatan()"]');
+  const originalHTML = btnAI.innerHTML;
+  btnAI.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+  btnAI.disabled = true;
+
+  google.script.run
+    .withSuccessHandler((hasilAI) => {
+      btnAI.innerHTML = originalHTML;
+      btnAI.disabled = false;
+
+      // Jika server mengembalikan pesan error
+      if (hasilAI.startsWith("Error AI:")) {
+        Swal.fire('AI Berhenti', 'API Key mungkin bermasalah atau kuota habis.', 'error');
+        return;
+      }
+
+      // Animasi Mengetik yang lebih halus
+      inputEl.value = "";
+      let i = 0;
+      const typeEffect = setInterval(() => {
+        if (i < hasilAI.length) {
+          inputEl.value += hasilAI.charAt(i);
+          autoResize(inputEl); // Pastikan kotak ikut membesar
+          i++;
+        } else {
+          clearInterval(typeEffect);
+        }
+      }, 15);
+    })
+    .withFailureHandler((err) => {
+      btnAI.innerHTML = originalHTML;
+      btnAI.disabled = false;
+      Swal.fire('Gagal', 'Koneksi ke server terputus.', 'error');
+    })
+    .callGeminiAI(originalText);
+}
+
+// --- HELPER: AUTO RESIZE TEXTAREA ---
+function autoResize(el) {
+  el.style.height = 'auto'; // Reset dulu
+  el.style.height = el.scrollHeight + 'px'; // Set sesuai isi konten
+}
+
+// UPDATE FUNGSI AI (Agar Trigger Resize)
+// Timpa bagian "generateAIKegiatan" yang lama dengan update kecil ini:
+function generateAIKegiatan() {
+  const inputEl = document.getElementById('kegiatan');
+  const originalText = inputEl.value;
+
+  if (!originalText || originalText.length < 3) {
+    Swal.fire({icon: 'info', title: 'Ketik Dulu...', text: 'Isi poin kegiatan dulu.'});
+    return;
+  }
+
+  // Loading State
+  const btnAI = document.querySelector('.fa-wand-magic-sparkles');
+  let btnWrapper = null; 
+  let originalIcon = "";
+  if(btnAI) {
+      btnWrapper = btnAI.parentElement;
+      originalIcon = btnWrapper.innerHTML;
+      btnWrapper.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+      btnWrapper.disabled = true;
+  }
+
+  google.script.run
+    .withSuccessHandler((hasilAI) => {
+      inputEl.value = ""; // Kosongkan
+      let i = 0;
+      
+      // EFEK MENGETIK + AUTO RESIZE
+      const typeEffect = setInterval(() => {
+        if (i < hasilAI.length) {
+          inputEl.value += hasilAI.charAt(i);
+          autoResize(inputEl); // <--- INI KUNCINYA (Resize tiap huruf)
+          i++;
+        } else {
+          clearInterval(typeEffect);
+        }
+      }, 20); // Sedikit lebih cepat (20ms) biar responsif
+      
+      if(btnWrapper) {
+         btnWrapper.innerHTML = originalIcon;
+         btnWrapper.disabled = false;
+      }
+    })
+    .withFailureHandler((error) => {
+      console.error(error);
+      Swal.fire({icon: 'error', title: 'Ups', text: 'Gagal koneksi AI.'});
+      inputEl.value = originalText;
+      if(btnWrapper) {
+         btnWrapper.innerHTML = originalIcon;
+         btnWrapper.disabled = false;
+      }
+    })
+    .callGeminiAI(originalText);
+}
+
+  </script>
+</body>
+</html>
